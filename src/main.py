@@ -802,8 +802,5 @@ async def main():
 
     print("\n리팩토링 루프 종료")
 
-
-
-
 if __name__ == "__main__":
     asyncio.run(main())
