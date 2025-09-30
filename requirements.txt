@@ -1,0 +1,25 @@
+# Env
+python-dotenv>=1.0.1
+
+# LangChain + providers
+langchain>=0.2
+langchain-openai>=0.2
+langchain-anthropic>=0.1
+langchain-google-genai>=1.0
+
+# Provider SDKs
+openai>=1.0
+anthropic>=0.29
+google-generativeai>=0.7
+
+# MCP integration
+mcp>=1.0
+langchain-mcp-adapters>=0.1
+
+# Clang Python bindings (requires system libclang)
+clang>=16.0
+
+# Dashboard (Streamlit)
+streamlit>=1.32
+pandas>=2.2
+plotly>=5.20
