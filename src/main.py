@@ -289,7 +289,6 @@ def make_refactor_from_issues(code: str, issues: str, file_path: str, project_co
     parts: List[str] = []
     part_index = 0
     while part_index < 10:
-        print(f"\n==={part_index}===")
         obj: Patch = chain.invoke({
             "code": code,
             "issues": issues,
@@ -351,7 +350,6 @@ def make_refactor_from_build(code: str, log: str, file_path: str, project_contex
     parts: List[str] = []
     part_index = 0
     while part_index < 10:
-        print(f"\n==={part_index}===")
         obj: Patch = chain.invoke({
             "code": code,
             "log": log,
@@ -424,6 +422,17 @@ def git_add_commit_if_changed(rel_path: str, commit_message: str) -> bool:
         return False
 
 def git_push():
+    status = subprocess.run(
+                ["git", "status"], 
+                cwd=GIT_WORKDIR,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                )
+    output = status.stdout.strip().lower()
+    if ("working tree clean" in output):
+        return
+
     # push
     p = subprocess.run(["git", "push", "origin", TARGET_BRANCH], cwd=GIT_WORKDIR)
     if p.returncode != 0:
@@ -602,7 +611,7 @@ def init_db():
         file_path TEXT, status TEXT, details TEXT
     )""")
     c.execute("""CREATE TABLE IF NOT EXISTS issue_stats (
-        timestamp TEXT, total_issues INTEGER, severity_distribution TEXT
+        timestamp TEXT, remaining_issues INTEGER, severity_distribution TEXT
     )""")
     c.execute("""CREATE TABLE IF NOT EXISTS build_log (
         timestamp TEXT, status TEXT,
@@ -665,6 +674,7 @@ async def main():
         raw_open_issues = await get_sonar_open_issues_text(sonar_server_params)
         # 필요한 column만 필터링
         issues_filtered = summarize_open_issues_text(raw_open_issues)
+        print(f"OPEN ISSUES {len(issues_filtered)}개 발견")
         
         SEVERITIES = ["BLOCKER", "CRITICAL"]
         severity_dict = {k: 0 for k in SEVERITIES}
@@ -673,7 +683,7 @@ async def main():
             severity_dict[sev] = severity_dict.get(sev, 0) + 1
         log_issue_stats(len(issues_filtered), severity_dict)
 
-        print(f"OPEN ISSUES {len(issues_filtered)}개 발견")
+        
         
         # 필터링한 issue에 속하는 .c, .h 파일만 추출
         target_files = set(
@@ -741,9 +751,7 @@ async def main():
                 del backup_paths[path]
             continue
         print("리팩토링 적용 완료")
-        did_push = False
-        while did_push != True:
-            did_push = git_push()
+        git_push()
 
         # build test
         ok, log = run_build(PROJECT_ROOT)
@@ -779,9 +787,7 @@ async def main():
         #build test
         
         # 7) 한번에 git 푸시 (변경이 있는 경우만)
-        did_push = False
-        while did_push != True:
-            did_push = git_push()
+        git_push()
 
         log_activity("round_completed", status="completed")
         # SonarCloud 분석 반영 대기
